@@ -1,4 +1,3 @@
 """
- - zipfile -> contactos.dat | indices.json
- 
+- zipfile -> contactos.dat | indices.json
 """

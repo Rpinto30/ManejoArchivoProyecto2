@@ -1,4 +1,10 @@
-
+import struct
+import os
+import shutil
+import json
+import hashlib
+from services.contact import Contact
+from pathlib import Path
 
 """
 tmaño fijo
@@ -6,3 +12,205 @@ tmaño fijo
 - contactos.dat
 - contactos.sha256
 """
+
+
+class ContactsFile:
+    def __init__(self, PATH, PATH_TEMP, PATH_BACKUP):
+        self.PATH = PATH
+        self.PATH_TEMP = PATH_TEMP
+        self.PATH_BACKUP = PATH_BACKUP
+    
+    
+    def save(self, contactBytes:bytes):
+        try:
+            if os.path.exists(self.PATH) and not os.path.exists(self.PATH_TEMP):
+                shutil.copy2(self.PATH, self.PATH_TEMP)
+
+            with open(self.PATH_TEMP, 'ab') as file:
+                file.write(contactBytes)
+                
+            if os.path.exists(self.PATH_TEMP):
+                shutil.copy2(self.PATH_TEMP, self.PATH_BACKUP)
+                os.replace(self.PATH_TEMP, self.PATH)
+
+        except Exception as e:
+            print(f"Error detectado durante el guardado: {e}")
+            if os.path.exists(self.PATH_TEMP):
+                try:
+                    os.replace(self.PATH_TEMP, self.PATH)
+                except Exception:
+                    pass
+    
+    
+    def update(self, contact:Contact, pos):
+        with open(self.PATH, 'r+b') as file:
+            file.seek(pos)
+            file.write(
+                contact.setBytes()
+            )
+    
+    def read(self, format:str, size:int, pos):
+        with open(self.PATH, 'rb') as file:
+            file.seek(pos)
+            b = file.read(size)
+            data = struct.unpack(format, b)
+        
+        return Contact(
+            data[0],
+            data[1].decode('utf-8').rstrip('\x00'),
+            data[2].decode('utf-8').rstrip('\x00'),
+            data[3].decode('utf-8').rstrip('\x00'),
+            data[4].decode('utf-8').rstrip('\x00')
+        )
+            
+    def getLastPos(self):
+        try:
+            with open(self.PATH, 'rb') as file:
+                file.seek(0, 2)
+                pos = file.tell()
+            return pos
+        except:
+            return 0
+    
+
+class IndexContact:
+    __index = {}
+    
+    def __init__(self, PATH, PATH_TEMP, PATH_BACKUP):
+        self.PATH = PATH
+        self.PATH_TEMP = PATH_TEMP
+        self.PATH_BACKUP = PATH_BACKUP
+        self.loadConcatIndex()
+    
+    #write __index in index.json
+    def setContact(self, contact:Contact, pos):
+        self.loadConcatIndex()
+        if str(contact.id) in self.__index:
+            raise Exception(f"El ID {contact.id} ya se encuentra ocupado")
+        
+        self.__index[contact.id] = pos
+        with open(self.PATH, 'w', encoding='utf-8') as file:
+            json.dump(self.__index, file, indent=4)
+    
+    #update __index from index.json
+    def loadConcatIndex(self):
+        if os.path.exists(self.PATH):
+            with open(self.PATH, 'r', encoding='utf-8') as fileIndex:
+                self.__index = json.load(fileIndex)   
+        
+    def getPosByID(self, id):
+        if str(id) in self.__index:
+            return self.__index[str(id)]
+        return -1
+    
+    def getNextKey(self):
+        return max(map(int, self.__index.keys()), default=-1) + 1
+        
+    def getIndex(self):
+        return self.__index
+        
+        
+class HashContact:
+    def __init__(self, PATH_HASH, PATH_FOLDER):
+        self.PATH_HASH = PATH_HASH / "contacts.sha256"
+        self.PATH_FOLDER = PATH_FOLDER
+    
+    def blocks(self, path):
+        with open(path, "rb") as file:
+            c = file.read()
+            sha256 = hashlib.sha256(c)
+                
+            while True:
+                b = file.read(4096)
+                if not b: break
+                sha256.update(b)
+        return sha256.hexdigest()
+
+    def comparacion(self):
+        lis = [f for f in self.PATH_FOLDER.iterdir() if f.is_file()]
+        
+        old_ = []
+        with open(self.PATH_HASH, 'r', encoding='utf-8') as reader:
+            for l in reader.readlines():
+                old_.append(
+                    l.split("|")
+                )
+
+        with open(self.PATH_HASH, 'w', encoding='utf-8') as file:
+            for l in lis:    
+                for l2 in old_:
+                    if l2[0] == l.name:
+                        if self.blocks(l) != l2[1].replace('\n',''):
+                            print(l.name, "-> MODIFICADO")
+                        else:
+                            print(l.name, " -> INTEGRO")
+        self.generate()
+        
+
+    def generate(self):
+        Path(".ignore").mkdir(parents=True, exist_ok=True)
+        lis = [f for f in self.PATH_FOLDER.iterdir() if f.is_file()]
+        with open(self.PATH_HASH, 'w', encoding='utf-8') as file:
+            for l in lis:
+                file.write(
+                    f"{self.PATH_FOLDER / l.name}|{self.blocks(l)}\n"
+                )
+
+    def compare(self, path1, path2):
+        r = self.blocks(path1)
+        r2 = self.blocks(path2)
+        print(f"\nCOINCIDEN EXACTAMENTE {path1} = {path2}" if r == r2 else f"No se encuentra coincidencia entre {path1} =/ {path2}")
+
+        return True if r == r2 else False
+            
+
+class RepoContact:
+    def __init__(self,
+                 PATH_FILE:str, #data/contact.dat
+                 PATH_TEMP_FILE: str, #data/contact.temp.dat
+                 PATH_BACKUP_FILE, #data/contact.dat.bak
+                 PATH_INDEX:str, #data/index.json
+                 PATH_INDEX_TEMP_FILE: str, #data/index.temp.json
+                 PATH_INDEX_BACKUP_FILE: str, #data/index.json.bak
+                 PATH_DATA, #data
+                 PATH_HASH): #.ignore/contact.sha256 
+        self.__index = IndexContact(
+            PATH_INDEX, PATH_INDEX_TEMP_FILE, PATH_INDEX_BACKUP_FILE
+        ) 
+        self.__contactFile = ContactsFile(
+            PATH_FILE, PATH_TEMP_FILE, PATH_BACKUP_FILE
+        )
+        self.__hash = HashContact(
+            PATH_HASH, PATH_DATA
+        )
+        
+        
+    def write(self, contact:Contact):
+        try:
+            self.__index.setContact(contact, self.__contactFile.getLastPos())
+            self.__contactFile.save(contact.setBytes())
+        except:
+            self.__contactFile.update(
+                contact,
+                self.__index.getPosByID(contact.id)
+                )
+        finally:
+            self.__hash.generate()
+        
+    def update(self, contact:Contact):
+        self.__contactFile.update(
+                    contact,
+                    self.__index.getPosByID(contact.id)
+                    )
+
+    def loadByID(self, id):
+        pos = self.__index.getPosByID(id)
+        if pos != -1:
+            return self.__contactFile.read(Contact.format(), Contact.calcSize(), pos)
+            
+    
+    def getAutoIncrementKey(self):
+        return self.__index.getNextKey()
+    
+    def getIndex(self):
+        return self.__index

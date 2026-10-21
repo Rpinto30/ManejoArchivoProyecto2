@@ -156,14 +156,27 @@ class HashContact:
                     f"{self.PATH_FOLDER / l.name}|{self.blocks(l)}\n"
                 )
 
-    def compare(self, path1, path2):
-        r = self.blocks(path1)
-        r2 = self.blocks(path2)
-        print(f"\nCOINCIDEN EXACTAMENTE {path1} = {path2}" if r == r2 else f"No se encuentra coincidencia entre {path1} =/ {path2}")
+    def compare(self, path):
+        target_path = str(Path("data") / path)
+        hash_file = None
 
-        return True if r == r2 else False
+        with open(self.PATH_HASH, 'r', encoding='utf-8') as file:
+            for line in file:
+                data = line.strip().split('|') 
+                if data[0] == target_path:
+                    hash_file = data[1]
+                    break
+                
+        if hash_file is None:
+            print(f"Ruta no encontrada en el registro de hashes: {target_path}")
+            return False
+        
+        current_hash = self.blocks(Path("data") / path)
+        if str(current_hash) == hash_file:
+            return True
             
-
+        return False
+        
 class RepoContact:
     def __init__(self,
                  PATH_FILE:str, #data/contact.dat
@@ -202,6 +215,7 @@ class RepoContact:
                     contact,
                     self.__index.getPosByID(contact.id)
                     )
+        self.__hash.generate()
 
     def loadByID(self, id):
         pos = self.__index.getPosByID(id)
@@ -214,3 +228,14 @@ class RepoContact:
     
     def getIndex(self):
         return self.__index
+    
+    
+    #hash
+    def genHash(self):
+        self.__hash.generate()
+    
+    """
+    only: data/ ... (FILE)
+    """
+    def comparePersistent(self, path):
+        return self.__hash.compare(path)

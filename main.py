@@ -39,6 +39,8 @@ def main():
                 1, "este será el no 1", "6666-7777", "email.correo@correo.gmail.com", "GUATEMALA"
             )
     
+    
+    print(repo.comparePersistent("contact.dat"))
     repo.write(c)
     repo.write(c2)
     repo.write(c3)
@@ -54,6 +56,7 @@ def main():
     #window = MainWindow()
     #window.show()
     #sys.exit(app.exec())
+    repo.genHash()
 
 
 if __name__ == "__main__":

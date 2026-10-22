@@ -4,7 +4,7 @@ from pathlib import Path
 #views
 from PySide6.QtWidgets import QApplication
 from views import APP_STYLE, MainWindow
-from report.reports import exportJSON
+
 
 #services
 from services.contact import Contact
@@ -28,34 +28,37 @@ def main():
         PATH_FILE_INDEX, PATH_FILE_INDEX_TEMP, PATH_FILE_INDEX_BAK,
         FOLDER_DATA, PATH_LOG_HASH
     )
-    
+    """
     c = Contact(
-        0, "PEPE", "1234-1523", "email.correo@correo.gmail.com", "CUIDAD DE LOS ALTOS"
-    )
-    c2 = Contact(
-            2, "RODRIGO", "0000-0000", "email.correo@correo.gmail.com", "sixseve"
+            0, "PEPE", "1234-1523", "email.correo@correo.gmail.com", "CUIDAD DE LOS ALTOS"
         )
-    c3 = Contact(
-                1, "este será el no 1", "6666-7777", "email.correo@correo.gmail.com", "GUATEMALA"
+        c2 = Contact(
+                2, "RODRIGO", "0000-0000", "email.correo@correo.gmail.com", "sixseve"
             )
+        c3 = Contact(
+                    1, "este será el no 1", "6666-7777", "email.correo@correo.gmail.com", "GUATEMALA"
+                )
+        
+        
+        
+        repo.write(c)
+        repo.write(c2)
+        repo.write(c3)
+        
+        repo.loadByID(1)
+        
+        c2.email = "corerrro@gmail.com"
+        c2.phone = "7790-0000"
+        repo.update(c2)
+        exportJSON(repo)
+        
+    """
     
-    
-    print(repo.comparePersistent("contact.dat"))
-    repo.write(c)
-    repo.write(c2)
-    repo.write(c3)
-    
-    repo.loadByID(1)
-    
-    c2.email = "corerrro@gmail.com"
-    c2.phone = "7790-0000"
-    repo.update(c2)
-    exportJSON(repo)
-    #app = QApplication(sys.argv)
-    #app.setStyleSheet(APP_STYLE)
-    #window = MainWindow()
-    #window.show()
-    #sys.exit(app.exec())
+    app = QApplication(sys.argv)
+    app.setStyleSheet(APP_STYLE)
+    window = MainWindow(repo)
+    window.show()
+    sys.exit(app.exec())
     repo.genHash()
 
 

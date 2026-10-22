@@ -2,7 +2,7 @@
 from PySide6.QtCore import QRegularExpression, Signal
 from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QLineEdit,
-                               QPushButton, QVBoxLayout)
+                               QPushButton, QVBoxLayout, QMessageBox)
 
 from .contact_card import ContactCard
 from .dialogs import confirm_discard, show_warning
@@ -125,6 +125,16 @@ class SearchContactView(QFrame):
         if errors:
             show_warning(self, "Datos inválidos", "\n".join(errors))
             return
-        self.contactUpdated.emit(data)
-        self.card.set_contact(data)       # nuevo estado base
-        self.modify_btn.setChecked(False)  # vuelve a solo lectura
+        
+        ans = QMessageBox.question(
+                    self, 
+                    "Registrar Contacto", 
+                    "¿Estas seguro de registrar la información de este contacto?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No
+                )
+        
+        if ans == QMessageBox.StandardButton.Yes:
+            self.contactUpdated.emit(data)
+            self.card.set_contact(data)
+            self.modify_btn.setChecked(False)

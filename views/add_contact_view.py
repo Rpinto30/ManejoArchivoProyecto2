@@ -1,8 +1,9 @@
-"""Frame "Contactos > Agregar"."""
+import re
+
 from PySide6.QtCore import QRegularExpression, Signal
 from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import (QFormLayout, QFrame, QHBoxLayout, QLabel,
-                               QLineEdit, QPushButton, QVBoxLayout)
+                               QLineEdit, QPushButton, QVBoxLayout, QMessageBox)
 
 from .dialogs import confirm_discard, show_warning
 from .validators import validate_contact
@@ -32,6 +33,15 @@ class AddContactView(QFrame):
         self.phone_edit.setMaxLength(9)
         self.phone_edit.setValidator(
             QRegularExpressionValidator(QRegularExpression(r"[0-9\-]{0,9}")))
+        
+        def regx_change(actual):
+            if re.match("^[0-9]{4}$", actual) and '-' not in actual:
+                self.phone_edit.setText(
+                    actual + "-"
+                )
+        
+        self.phone_edit.textChanged.connect(regx_change)
+        
         self.email_edit = QLineEdit()
         self.email_edit.setPlaceholderText("Ingresa correo")
         self.city_edit = QLineEdit()
@@ -98,4 +108,14 @@ class AddContactView(QFrame):
         if errors:
             show_warning(self, "Datos inválidos", "\n".join(errors))
             return
-        self.contactCreated.emit(data)
+        ans = QMessageBox.question(
+            self, 
+            "Registrar Contacto", 
+            "¿Estas seguro de registrar la información de este contacto?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if ans == QMessageBox.StandardButton.Yes:
+            self.contactCreated.emit(data)
+        

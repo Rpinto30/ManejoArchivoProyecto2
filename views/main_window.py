@@ -1,17 +1,22 @@
 """Ventana principal."""
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QHBoxLayout, QFrame, QLabel, QMainWindow,
-                               QStackedWidget, QVBoxLayout, QWidget)
+                               QStackedWidget, QVBoxLayout, QWidget, QMessageBox, QFileDialog)
 
 from .add_contact_view import AddContactView
 from .contact_card import ContactCard
 from .search_contact_view import SearchContactView
 from .top_bar import TopBar
 
+from services.contact import Contact
+from persistent.concat_save import RepoContact
+
+from report.reports import exportJSON, exportPDF
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, repo: RepoContact):
         super().__init__()
+        self.repo = repo
         self.setWindowTitle("Agenda de Contactos")
         self.resize(1000, 620)
         self.setMinimumSize(900, 560)
@@ -63,10 +68,9 @@ class MainWindow(QMainWindow):
         layout.addLayout(body, 1)
 
         self._connect_signals()
+        if not repo.comparePersistent("contact.dat"):
+            QMessageBox.warning(self, "Datos Modificados", "Los datos fueron alterados fuera del sistema")
 
-    # ------------------------------------------------------------------
-    # Conexiones
-    # ------------------------------------------------------------------
     def _connect_signals(self):
         tb = self.top_bar
         tb.contactsAction.connect(self._on_contacts_action)
@@ -81,9 +85,6 @@ class MainWindow(QMainWindow):
         self.search_view.contactUpdated.connect(self._on_contact_updated)
         self.search_view.closed.connect(self._close_frame)
 
-    # ------------------------------------------------------------------
-    # Navegación entre frames
-    # ------------------------------------------------------------------
     def _can_leave_current(self) -> bool:
         current = self.left_stack.currentWidget()
         return not hasattr(current, "can_leave") or current.can_leave()
@@ -109,11 +110,9 @@ class MainWindow(QMainWindow):
          "info": self.show_file_info}[action]()
 
     def _on_export_action(self, action: str):
-        {"json": self.export_json, "report": self.create_report}[action]()
+        {"json": self.export_json, "report": self.create_report, "both": self.exportBoth}[action]()
 
-    # ------------------------------------------------------------------
-    # Slots de contactos (conectan UI <-> backend)
-    # ------------------------------------------------------------------
+
     def _on_contact_created(self, data: dict):
         saved = self.save_contact(data) or data
         self.card.set_contact(saved)
@@ -127,25 +126,47 @@ class MainWindow(QMainWindow):
     def _on_contact_updated(self, data: dict):
         self.update_contact(data)
 
-    # ------------------------------------------------------------------
-    # BACKEND (por implementar) — mueve estos métodos a tu capa lógica
-    # ------------------------------------------------------------------
-    def get_next_id(self) -> int | None:
-        """Devuelve el siguiente ID autoincremental."""
-        pass
 
+    #backend
+
+    def get_next_id(self) -> int | None:
+        return self.repo.getAutoIncrementKey()
+        
     def save_contact(self, data: dict) -> dict | None:
-        """Guarda un contacto nuevo. Puede devolver el dict con el ID asignado."""
-        pass
+        print(data)
+        new_concat = Contact(
+            data['id'],
+            data['name'],
+            data['phone'],
+            data['email'],
+            data['city']
+        )
+        
+        
+        self.repo.write(new_concat)
+        QMessageBox.information(self, "Operación Exitosa", "Los datos se han guardado correctamente.")
 
     def find_contact(self, contact_id: int) -> dict | None:
-        """Devuelve {'id','name','phone','email','city'} o None si no existe."""
-        pass
-
+        r = self.repo.loadByID(
+            contact_id
+        )
+        
+        if r != None:
+            return r.setJson()
+        else :
+            return None
+        
     def update_contact(self, data: dict) -> None:
-        """Actualiza un contacto existente."""
-        pass
-
+        u_concat = Contact(
+                data['id'],
+                data['name'],
+                data['phone'],
+                data['email'],
+                data['city']
+            )
+        self.repo.update(u_concat)
+        QMessageBox.information(self, "Operación Exitosa", "Los datos se han guardado correctamente.")
+        
     def verify_integrity(self) -> None:
         pass
 
@@ -156,10 +177,47 @@ class MainWindow(QMainWindow):
         pass
 
     def export_json(self) -> None:
-        pass
+        dialog = QFileDialog(None, "Select Folders")
+        dialog.setFileMode(QFileDialog.FileMode.Directory)
+        dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)
 
+        if dialog.exec() == QFileDialog.DialogCode.Accepted:
+            selected_folders = dialog.selectedFiles() 
+            try:
+                exportJSON(self.repo, selected_folders[0])
+                QMessageBox.information(self, "Operación Exitosa", f"Reporte JSON creado correctamente en:\n{selected_folders[0]}")
+            except Exception as e:
+                QMessageBox.critical(None, "Error al crear el reporte", f"Ha ocurrido un error inesperado al crear el reporte:\n {e}")
+                
     def create_report(self) -> None:
-        pass
+        dialog = QFileDialog(None, "Select Folders")
+        dialog.setFileMode(QFileDialog.FileMode.Directory)
+        dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)
+
+        if dialog.exec() == QFileDialog.DialogCode.Accepted:
+            selected_folders = dialog.selectedFiles() 
+            try:
+                exportPDF(self.repo, selected_folders[0])
+                QMessageBox.information(self, "Operación Exitosa", f"Reporte PDF creado correctamente en:\n{selected_folders[0]}")
+            except Exception as e:
+                QMessageBox.critical(None, "Error al crear el reporte", f"Ha ocurrido un error inesperado al crear el reporte:\n {e}")
+                
+
+    def exportBoth(self) -> None:
+        dialog = QFileDialog(None, "Select Folders")
+        dialog.setFileMode(QFileDialog.FileMode.Directory)
+        dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)
+
+        if dialog.exec() == QFileDialog.DialogCode.Accepted:
+            selected_folders = dialog.selectedFiles() 
+            try:
+                exportJSON(self.repo, selected_folders[0])
+                exportPDF(self.repo, selected_folders[0])
+                QMessageBox.information(self, "Operación Exitosa", f"Reportes creados correctamente en:\n{selected_folders[0]}")
+            except Exception as e:
+                QMessageBox.critical(None, "Error al crear el reporte", f"Ha ocurrido un error inesperado al crear el reporte:\n {e}")
+                
 
     def show_help(self) -> None:
         pass
+    

@@ -44,7 +44,7 @@ class TopBar(QFrame):
                              "backup": "Crear respaldo ZIP",
                              "info": "Información del archivo"})
         self.export_menu = MenuCombo(
-            "Exportar", {"json": "Exportar JSON", "report": "Crear reporte"})
+            "Exportar", {"json": "Exportar JSON", "report": "Crear reporte", "both": "Crear ambos"})
         self.help_button = QPushButton("Ayuda")
 
         right = QVBoxLayout()

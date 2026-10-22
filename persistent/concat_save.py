@@ -221,7 +221,7 @@ class RepoContact:
         pos = self.__index.getPosByID(id)
         if pos != -1:
             return self.__contactFile.read(Contact.format(), Contact.calcSize(), pos)
-            
+        return None
     
     def getAutoIncrementKey(self):
         return self.__index.getNextKey()

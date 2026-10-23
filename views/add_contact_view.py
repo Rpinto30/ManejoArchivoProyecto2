@@ -26,14 +26,17 @@ class AddContactView(QFrame):
         self.id_edit.setObjectName("idField")
         self.id_edit.setReadOnly(True)
         self.id_edit.setPlaceholderText("Automático")
+        self.id_edit.setMinimumHeight(45)
         self.name_edit = QLineEdit()
         self.name_edit.setPlaceholderText("Ingresa Nombre")
+        self.name_edit.setMaxLength(30)
+        self.name_edit.setMinimumHeight(45)
         self.phone_edit = QLineEdit()
         self.phone_edit.setPlaceholderText("XXXX-XXXX")
         self.phone_edit.setMaxLength(9)
         self.phone_edit.setValidator(
             QRegularExpressionValidator(QRegularExpression(r"[0-9\-]{0,9}")))
-        
+        self.phone_edit.setMinimumHeight(45)
         def regx_change(actual):
             if re.match("^[0-9]{4}$", actual) and '-' not in actual:
                 self.phone_edit.setText(
@@ -44,9 +47,12 @@ class AddContactView(QFrame):
         
         self.email_edit = QLineEdit()
         self.email_edit.setPlaceholderText("Ingresa correo")
+        self.email_edit.setMaxLength(17)
+        self.email_edit.setMinimumHeight(45)
         self.city_edit = QLineEdit()
         self.city_edit.setPlaceholderText("Ingresa ciudad")
-
+        self.city_edit.setMaxLength(40)
+        self.city_edit.setMinimumHeight(45)
         form = QFormLayout()
         form.setRowWrapPolicy(QFormLayout.WrapAllRows)
         form.setVerticalSpacing(8)

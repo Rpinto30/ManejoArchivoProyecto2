@@ -97,9 +97,10 @@ QLineEdit {
     background: #FFF6CC;
     border: 2px solid #2B1B0E;
     border-radius: 10px;
-    padding: 6px 10px;
+    padding: 6px 5px;
     selection-background-color: #B5301F;
     selection-color: #FFF4C2;
+    margin: 0px;
 }
 QLineEdit:focus { border-color: #B5301F; }
 QLineEdit#idField, QLineEdit#idField:read-only {

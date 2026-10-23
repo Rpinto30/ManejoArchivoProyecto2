@@ -8,6 +8,7 @@ from .contact_card import ContactCard
 from .search_contact_view import SearchContactView
 from .top_bar import TopBar
 from .info_file import DialogInfoMetadata
+from .help import DialogHelp
 
 from datetime import datetime
 import stat
@@ -24,7 +25,7 @@ class MainWindow(QMainWindow):
         self.repo = repo
         self.setWindowTitle("Agenda de Contactos")
         self.resize(1000, 620)
-        self.setMinimumSize(900, 560)
+        self.setMinimumSize(1080, 720)
 
         root = QWidget()
         root.setObjectName("root")
@@ -252,5 +253,6 @@ class MainWindow(QMainWindow):
                 
 
     def show_help(self) -> None:
-        pass
+        dialogo = DialogHelp(self)
+        resultado = dialogo.exec()
     

@@ -2,7 +2,7 @@
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPixmap
 from PySide6.QtWidgets import (QFrame, QGridLayout, QHBoxLayout, QLabel,
-                               QLineEdit, QVBoxLayout)
+                               QLineEdit, QVBoxLayout, QSizePolicy)
 
 
 def _avatar_pixmap(size: int = 96) -> QPixmap:
@@ -32,7 +32,7 @@ class ContactCard(QFrame):
         super().__init__(parent)
         self.setObjectName("card")
         self.setMinimumWidth(480)
-        self.setMaximumWidth(560)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self._original: dict = {}
         self._id = None
 
@@ -45,6 +45,8 @@ class ContactCard(QFrame):
         self.name_edit = QLineEdit()
         self.name_edit.setObjectName("cardName")
         self.name_edit.setPlaceholderText("Nombre completo")
+        self.name_edit.setMaxLength(30)
+        self.name_edit.setMinimumHeight(50)
 
         head_text = QVBoxLayout()
         head_text.addWidget(self.number_label)
@@ -57,8 +59,14 @@ class ContactCard(QFrame):
 
         self.phone_edit = QLineEdit()
         self.phone_edit.setPlaceholderText("XXXX-XXXX")
+        self.phone_edit.setMaxLength(9)
+        self.phone_edit.setMinimumHeight(45)
         self.email_edit = QLineEdit()
+        self.email_edit.setMaxLength(17)
+        self.email_edit.setMinimumHeight(45)
         self.city_edit = QLineEdit()
+        self.city_edit.setMaxLength(40)
+        self.city_edit.setMinimumHeight(45)
 
         left = QGridLayout()
         left.addWidget(self._label("TEL:"), 0, 0)

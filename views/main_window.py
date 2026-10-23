@@ -7,11 +7,16 @@ from .add_contact_view import AddContactView
 from .contact_card import ContactCard
 from .search_contact_view import SearchContactView
 from .top_bar import TopBar
+from .info_file import DialogInfoMetadata
+
+from datetime import datetime
+import stat
 
 from services.contact import Contact
 from persistent.concat_save import RepoContact
 
 from report.reports import exportJSON, exportPDF
+from persistent.backups import saveZIP
 
 class MainWindow(QMainWindow):
     def __init__(self, repo: RepoContact):
@@ -68,9 +73,10 @@ class MainWindow(QMainWindow):
         layout.addLayout(body, 1)
 
         self._connect_signals()
-        if not repo.comparePersistent("contact.dat"):
-            QMessageBox.warning(self, "Datos Modificados", "Los datos fueron alterados fuera del sistema")
-
+        r = repo.comparePersistent("contact.dat")
+        if r == 1:
+            QMessageBox.warning(self, "Datos Modificados", "Los datos fueron alterados fuera del sistema") 
+        
     def _connect_signals(self):
         tb = self.top_bar
         tb.contactsAction.connect(self._on_contacts_action)
@@ -168,13 +174,40 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "Operación Exitosa", "Los datos se han guardado correctamente.")
         
     def verify_integrity(self) -> None:
-        pass
+        r = self.repo.comparePersistent("contact.dat")
+        if r == 1:
+            QMessageBox.warning(self, "Datos Modificados", "Los datos fueron alterados fuera del sistema") 
+        elif r == -1:
+            QMessageBox.warning(self, "Datos No encontrados", "Los datos no fueron encontrados, revisa si existe la carpeta data") 
+        elif r == 0:
+            QMessageBox.information(self, "Datos Integros", "Los datos se encuentran integros, sin modificaciones fuera del sistema") 
 
+    
     def create_zip_backup(self) -> None:
-        pass
+        dialog = QFileDialog(None, "Select Folders")
+        dialog.setFileMode(QFileDialog.FileMode.Directory)
+        dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)
+
+        if dialog.exec() == QFileDialog.DialogCode.Accepted:
+            selected_folders = dialog.selectedFiles() 
+            
+            data = saveZIP(self.repo, selected_folders[0])
+            if data:
+                QMessageBox.information(self, 
+                                        "Operación Exitosa", 
+                                        (
+    f"El respaldo ZIP fue creado en:\n {selected_folders[0]}\n\n"
+    f" - Detalles: \n"
+    f"\tOriginal: {data['origin']} bytes\n"
+    f"\tZIP: {data['zip']} bytes\n"
+    f"\tTotal Comprimido: {data['per']:.2f}%"
+))
+            else:
+                QMessageBox.critical(None, "Error al crear el respaldo", f"Ha ocurrido un error inesperado al crear el respaldo")
 
     def show_file_info(self) -> None:
-        pass
+        dialogo = DialogInfoMetadata(self.repo,self)
+        resultado = dialogo.exec()
 
     def export_json(self) -> None:
         dialog = QFileDialog(None, "Select Folders")

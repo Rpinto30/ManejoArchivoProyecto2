@@ -88,7 +88,7 @@ class IndexContact:
         if str(contact.id) in self.__index:
             raise Exception(f"El ID {contact.id} ya se encuentra ocupado")
         
-        self.__index[contact.id] = pos
+        self.__index[str(contact.id)] = pos
         with open(self.PATH, 'w', encoding='utf-8') as file:
             json.dump(self.__index, file, indent=4)
     
@@ -99,6 +99,8 @@ class IndexContact:
                 self.__index = json.load(fileIndex)   
         
     def getPosByID(self, id):
+        print(self.__index)
+        print(str(id) in self.__index, id)
         if str(id) in self.__index:
             return self.__index[str(id)]
         return -1
@@ -148,7 +150,6 @@ class HashContact:
         
 
     def generate(self):
-        Path(".ignore").mkdir(parents=True, exist_ok=True)
         lis = [f for f in self.PATH_FOLDER.iterdir() if f.is_file()]
         with open(self.PATH_HASH, 'w', encoding='utf-8') as file:
             for l in lis:
@@ -181,12 +182,16 @@ class RepoContact:
     def __init__(self,
                  PATH_FILE:str, #data/contact.dat
                  PATH_TEMP_FILE: str, #data/contact.temp.dat
-                 PATH_BACKUP_FILE, #data/contact.dat.bak
+                 PATH_BACKUP_FILE, #backup/contact.dat.bak
+                 
                  PATH_INDEX:str, #data/index.json
                  PATH_INDEX_TEMP_FILE: str, #data/index.temp.json
-                 PATH_INDEX_BACKUP_FILE: str, #data/index.json.bak
+                 PATH_INDEX_BACKUP_FILE: str, #backup/index.json.bak
+                 
                  PATH_DATA, #data
-                 PATH_HASH): #.ignore/contact.sha256 
+                 PATH_HASH, #.ignore/contact.sha256
+                 
+                 ):  
         self.__index = IndexContact(
             PATH_INDEX, PATH_INDEX_TEMP_FILE, PATH_INDEX_BACKUP_FILE
         ) 
@@ -237,5 +242,11 @@ class RepoContact:
     """
     only: data/ ... (FILE)
     """
-    def comparePersistent(self, path):
-        return self.__hash.compare(path)
+    def comparePersistent(self, path) -> int:
+        if os.path.exists(str(Path("data") / path)):
+            return  0 if self.__hash.compare(path) else 1
+        else: return -1
+    
+    
+    def getPathData(self):
+        return self.__hash.PATH_FOLDER

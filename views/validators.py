@@ -6,7 +6,6 @@ PHONE_RE = re.compile(r"^\d{4}-\d{4}$")
 
 
 def validate_contact(data: dict) -> list[str]:
-    """Devuelve una lista de errores (vacía si todo es válido)."""
     errors = []
     labels = {"name": "Nombre", "phone": "Teléfono", "email": "Correo", "city": "Ciudad"}
     empty = [label for key, label in labels.items() if not data.get(key, "").strip()]

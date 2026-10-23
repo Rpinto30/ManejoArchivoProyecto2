@@ -1,0 +1,37 @@
+[
+    {
+        "id": 0,
+        "name": "YA NO TE LLAMAS PEPE",
+        "phone": "1234-1523",
+        "email": "email.correo@corr",
+        "city": "CUIDAD DE LOS ALTOS"
+    },
+    {
+        "id": 1,
+        "name": "sdfsdfsdfs",
+        "phone": "6666-7777",
+        "email": "email.correo@asda",
+        "city": "GUATEMALA"
+    },
+    {
+        "id": 2,
+        "name": "RODRIGO",
+        "phone": "7790-0000",
+        "email": "corerrro@gmail.co",
+        "city": "sixseve"
+    },
+    {
+        "id": 3,
+        "name": "NUEVO NOMBRE",
+        "phone": "1230-9999",
+        "email": "coasdasd@gd.com",
+        "city": "asdasdasda"
+    },
+    {
+        "id": 4,
+        "name": "OAOSAODKASODA",
+        "phone": "2121-2123",
+        "email": "correo@correo.gma",
+        "city": "asdasdasda sd asda sda"
+    }
+]

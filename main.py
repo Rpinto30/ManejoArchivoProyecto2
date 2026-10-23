@@ -12,15 +12,23 @@ from persistent.concat_save import RepoContact
 
 #PATH
 FOLDER_DATA = Path("data")
+FOLDER_BAK_DATA = Path("backup")
+
+
+
 PATH_FILE_DATA = FOLDER_DATA / "contact.dat"
 PATH_FILE_DATA_TEMP = FOLDER_DATA / "contact.temp.dat"
-PATH_FILE_DATA_BAK = FOLDER_DATA / "contact.dat.bak"
+PATH_FILE_DATA_BAK = FOLDER_BAK_DATA / "contact.dat.bak"
 
 PATH_FILE_INDEX = FOLDER_DATA / "index.json"
 PATH_FILE_INDEX_TEMP = FOLDER_DATA / "index.temp.json"
-PATH_FILE_INDEX_BAK = FOLDER_DATA / "index.json.bak"
+PATH_FILE_INDEX_BAK = FOLDER_BAK_DATA / "index.json.bak"
 
 PATH_LOG_HASH = Path(".ignore")
+
+FOLDER_DATA.mkdir(parents=True, exist_ok=True)
+FOLDER_BAK_DATA.mkdir(parents=True, exist_ok=True)
+PATH_LOG_HASH.mkdir(parents=True, exist_ok=True)
 
 def main():
     repo = RepoContact(

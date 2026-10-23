@@ -89,14 +89,39 @@ class IndexContact:
             raise Exception(f"El ID {contact.id} ya se encuentra ocupado")
         
         self.__index[str(contact.id)] = pos
-        with open(self.PATH, 'w', encoding='utf-8') as file:
-            json.dump(self.__index, file, indent=4)
+        try:
+            with open(self.PATH_TEMP, 'w', encoding='utf-8') as file:
+                json.dump(self.__index, file, indent=4)
+            
+            if os.path.exists(self.PATH_TEMP):
+                if os.path.exists(self.PATH):
+                    shutil.copy2(self.PATH, self.PATH_BACKUP)
+                shutil.copy2(self.PATH_TEMP, self.PATH_BACKUP)
+                os.replace(self.PATH_TEMP, self.PATH)
+        except Exception as e:
+            print(f"Error detectado durante el guardado: {e}")
+            if os.path.exists(self.PATH_TEMP):
+                try:
+                    os.replace(self.PATH_TEMP, self.PATH)
+                except Exception:
+                    pass
     
     #update __index from index.json
     def loadConcatIndex(self):
-        if os.path.exists(self.PATH):
-            with open(self.PATH, 'r', encoding='utf-8') as fileIndex:
-                self.__index = json.load(fileIndex)   
+        try:
+            if os.path.exists(self.PATH):
+                with open(self.PATH, 'r', encoding='utf-8') as fileIndex:
+                    self.__index = json.load(fileIndex) 
+        except Exception:
+            if os.path.exists(self.PATH_BACKUP):
+                try:
+                    shutil.copy2(self.PATH_BACKUP, self.PATH)
+                    with open(self.PATH, 'r', encoding='utf-8') as fileIndex:
+                        self.__index = json.load(fileIndex)
+                except Exception:
+                    self.__index = {}
+            else:
+                self.__index = {}
         
     def getPosByID(self, id):
         print(self.__index)
@@ -113,9 +138,11 @@ class IndexContact:
         
         
 class HashContact:
-    def __init__(self, PATH_HASH, PATH_FOLDER):
+    def __init__(self, PATH_HASH, PATH_FOLDER, PATH_TEMP, PATH_BACKUP):
         self.PATH_HASH = PATH_HASH / "contacts.sha256"
         self.PATH_FOLDER = PATH_FOLDER
+        self.PATH_TEMP = PATH_TEMP
+        self.PATH_BACKUP = PATH_BACKUP
     
     def blocks(self, path):
         with open(path, "rb") as file:
@@ -132,16 +159,21 @@ class HashContact:
         lis = [f for f in self.PATH_FOLDER.iterdir() if f.is_file()]
         
         old_ = []
-        with open(self.PATH_HASH, 'r', encoding='utf-8') as reader:
-            for l in reader.readlines():
-                old_.append(
-                    l.split("|")
-                )
+        try:
+            with open(self.PATH_HASH, 'r', encoding='utf-8') as reader:
+                for l in reader.readlines():
+                    old_.append(l.split("|"))
+        except Exception:
+            if os.path.exists(self.PATH_BACKUP):
+                shutil.copy2(self.PATH_BACKUP, self.PATH_HASH)
+                with open(self.PATH_HASH, 'r', encoding='utf-8') as reader:
+                    for l in reader.readlines():
+                        old_.append(l.split("|"))
 
         with open(self.PATH_HASH, 'w', encoding='utf-8') as file:
             for l in lis:    
                 for l2 in old_:
-                    if l2[0] == l.name:
+                    if l2[0] == str(l) or l2[0].endswith(l.name):
                         if self.blocks(l) != l2[1].replace('\n',''):
                             print(l.name, "-> MODIFICADO")
                         else:
@@ -150,24 +182,54 @@ class HashContact:
         
 
     def generate(self):
-        lis = [f for f in self.PATH_FOLDER.iterdir() if f.is_file()]
-        with open(self.PATH_HASH, 'w', encoding='utf-8') as file:
-            for l in lis:
-                file.write(
-                    f"{self.PATH_FOLDER / l.name}|{self.blocks(l)}\n"
-                )
+        try:
+            lis = [f for f in self.PATH_FOLDER.iterdir() if f.is_file()]
+            with open(self.PATH_TEMP, 'w', encoding='utf-8') as file:
+                for l in lis:
+                    file.write(
+                        f"{self.PATH_FOLDER / l.name}|{self.blocks(l)}\n"
+                    )
+            
+            if os.path.exists(self.PATH_TEMP):
+                if os.path.exists(self.PATH_HASH):
+                    shutil.copy2(self.PATH_HASH, self.PATH_BACKUP)
+                shutil.copy2(self.PATH_TEMP, self.PATH_BACKUP)
+                os.replace(self.PATH_TEMP, self.PATH_HASH)
+        except Exception as e:
+            print(f"Error detectado durante el guardado: {e}")
+            if os.path.exists(self.PATH_TEMP):
+                try:
+                    os.replace(self.PATH_TEMP, self.PATH_HASH)
+                except Exception:
+                    pass
 
     def compare(self, path):
+        try:
+            if not os.path.exists(self.PATH_HASH) and os.path.exists(self.PATH_BACKUP):
+                shutil.copy2(self.PATH_BACKUP, self.PATH_HASH)
+        except Exception:
+            pass
+
         target_path = str(Path("data") / path)
         hash_file = None
 
-        with open(self.PATH_HASH, 'r', encoding='utf-8') as file:
-            for line in file:
-                data = line.strip().split('|') 
-                if data[0] == target_path:
-                    hash_file = data[1]
-                    break
-                
+        try:
+            with open(self.PATH_HASH, 'r', encoding='utf-8') as file:
+                for line in file:
+                    data = line.strip().split('|') 
+                    if data[0] == target_path:
+                        hash_file = data[1]
+                        break
+        except Exception:
+            if os.path.exists(self.PATH_BACKUP):
+                shutil.copy2(self.PATH_BACKUP, self.PATH_HASH)
+                with open(self.PATH_HASH, 'r', encoding='utf-8') as file:
+                    for line in file:
+                        data = line.strip().split('|') 
+                        if data[0] == target_path:
+                            hash_file = data[1]
+                            break
+
         if hash_file is None:
             print(f"Ruta no encontrada en el registro de hashes: {target_path}")
             return False
@@ -190,7 +252,8 @@ class RepoContact:
                  
                  PATH_DATA, #data
                  PATH_HASH, #.ignore/contact.sha256
-                 
+                 PATH_HASH_TEMP, #.ignore/contact.temp.sha256
+                 PATH_HASH_BAK #.ignore/contact.sha256.bak
                  ):  
         self.__index = IndexContact(
             PATH_INDEX, PATH_INDEX_TEMP_FILE, PATH_INDEX_BACKUP_FILE
@@ -199,7 +262,7 @@ class RepoContact:
             PATH_FILE, PATH_TEMP_FILE, PATH_BACKUP_FILE
         )
         self.__hash = HashContact(
-            PATH_HASH, PATH_DATA
+            PATH_HASH, PATH_DATA, PATH_HASH_TEMP, PATH_HASH_BAK
         )
         
         

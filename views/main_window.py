@@ -76,7 +76,7 @@ class MainWindow(QMainWindow):
         self._connect_signals()
         r = repo.comparePersistent("contact.dat")
         if r == 1:
-            QMessageBox.warning(self, "Datos Modificados", "Los datos fueron alterados fuera del sistema") 
+            QMessageBox.warning(self, "Datos Modificados", "Los datos fueron alterados fuera del sistema.\nSe recomienda reemplazar por copia de seguridad contact.sha256.bak") 
         
     def _connect_signals(self):
         tb = self.top_bar
@@ -177,7 +177,7 @@ class MainWindow(QMainWindow):
     def verify_integrity(self) -> None:
         r = self.repo.comparePersistent("contact.dat")
         if r == 1:
-            QMessageBox.warning(self, "Datos Modificados", "Los datos fueron alterados fuera del sistema") 
+            QMessageBox.warning(self, "Datos Modificados", "Los datos fueron alterados fuera del sistema.\nSe recomienda reemplazar por copia de seguridad contact.sha256.bak") 
         elif r == -1:
             QMessageBox.warning(self, "Datos No encontrados", "Los datos no fueron encontrados, revisa si existe la carpeta data") 
         elif r == 0:

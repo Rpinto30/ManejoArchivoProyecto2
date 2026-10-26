@@ -20,7 +20,7 @@ def saveZIP(repo:RepoContact, pathSave):
         origin = sum(f.stat().st_size for f in repo_path.glob('*') if f.is_file())
         c = path.stat().st_size
         
-        r = ((origin - c) / origin) * 100 if origin > 0 else 0
+        r = (abs(origin - c) / origin) * 100 if origin > 0 else 0
         
         data = {
             "origin": origin,

@@ -235,6 +235,8 @@ class HashContact:
             return False
         
         current_hash = self.blocks(Path("data") / path)
+        print("Current: ", current_hash)
+        print("Save: ", hash_file)
         if str(current_hash) == hash_file:
             return True
             
@@ -265,6 +267,9 @@ class RepoContact:
             PATH_HASH, PATH_DATA, PATH_HASH_TEMP, PATH_HASH_BAK
         )
         
+        
+        self.path_bakcup = Path("backup")
+        self.path_data = Path("data")
         
     def write(self, contact:Contact):
         try:
@@ -313,3 +318,19 @@ class RepoContact:
     
     def getPathData(self):
         return self.__hash.PATH_FOLDER
+    
+    
+    def restoreBackup(self) -> bool:
+        if not self.path_bakcup.exists():
+            return False
+
+        if self.path_data.exists():
+            shutil.rmtree(self.path_data)
+
+        shutil.copytree(self.path_bakcup, self.path_data)
+
+        for file in self.path_data.iterdir():
+            if file.is_file() and file.suffix == ".bak":
+                clear_file = file.with_suffix('')
+                file.rename(clear_file)
+        return True

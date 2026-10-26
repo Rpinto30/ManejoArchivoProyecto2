@@ -75,8 +75,22 @@ class MainWindow(QMainWindow):
 
         self._connect_signals()
         r = repo.comparePersistent("contact.dat")
-        if r == 1:
-            QMessageBox.warning(self, "Datos Modificados", "Los datos fueron alterados fuera del sistema.\nSe recomienda reemplazar por copia de seguridad contact.sha256.bak") 
+        r2 = repo.comparePersistent("index.json")
+        if r == 1 or r2 == 1:
+            respuesta = QMessageBox.warning(
+                self,
+                "Conflicto Integridad de datos", 
+                "Los datos fueron alterados fuera del sistema.\nDeseas restablecer la ultima copia de seguridad?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            ) 
+            if respuesta == QMessageBox.StandardButton.Yes:
+                b = repo.restoreBackup()
+
+                if b: 
+                    QMessageBox.information(self, "Operación Exitosa", "Los datos se han restaurado correctamente.")
+                else:
+                    QMessageBox.critical(self, "Error al restaurar datos", "Ha ocurrido un error al restablecer los datos.\nPrueba manualmente.")
         
     def _connect_signals(self):
         tb = self.top_bar
@@ -176,14 +190,28 @@ class MainWindow(QMainWindow):
         
     def verify_integrity(self) -> None:
         r = self.repo.comparePersistent("contact.dat")
-        if r == 1:
-            QMessageBox.warning(self, "Datos Modificados", "Los datos fueron alterados fuera del sistema.\nSe recomienda reemplazar por copia de seguridad contact.sha256.bak") 
+        r2 = self.repo.comparePersistent("index.json")
+        if r == 1 or r2 == 1:
+            respuesta = QMessageBox.warning(
+                        self,
+                        "Conflicto Integridad de datos", 
+                        "Los datos fueron alterados fuera del sistema.\nDeseas restablecer la ultima copia de seguridad?",
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                        QMessageBox.StandardButton.No
+                    ) 
+            if respuesta == QMessageBox.StandardButton.Yes:
+                b = self.repo.restoreBackup()
+                if b: 
+                    QMessageBox.information(self, "Operación Exitosa", "Los datos se han restaurado correctamente.")
+                else:
+                    QMessageBox.critical(self, "Error al restaurar datos", "Ha ocurrido un error al restablecer los datos.\nPrueba manualmente.")
         elif r == -1:
             QMessageBox.warning(self, "Datos No encontrados", "Los datos no fueron encontrados, revisa si existe la carpeta data") 
         elif r == 0:
             QMessageBox.information(self, "Datos Integros", "Los datos se encuentran integros, sin modificaciones fuera del sistema") 
 
-    
+        
+
     def create_zip_backup(self) -> None:
         dialog = QFileDialog(None, "Select Folders")
         dialog.setFileMode(QFileDialog.FileMode.Directory)
